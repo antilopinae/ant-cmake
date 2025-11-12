@@ -1,5 +1,29 @@
 cmake_minimum_required(VERSION 3.26.0 FATAL_ERROR)
 
+# In common generated Makefile script will be as this:
+#[[
+
+obj-m := ant-hello-1-module.o
+ant-hello-1-module-objs := hello-1.o
+
+EXTRA_CFLAGS += -I/home/nickger/Desktop/ant-kernel/cmake-build-debug/c/ant-hello-1-module/include
+
+hello-1.o: CFLAGS_hello-1.o := $(EXTRA_CFLAGS)
+
+KDIR := /home/nickger/Desktop/ant-kernel/cmake-build-debug/kernel-headers
+PWD := $(shell pwd)
+
+all:
+	$(MAKE) -C $(KDIR) M=$(PWD) modules
+
+clean:
+	$(MAKE) -C $(KDIR) M=$(PWD) clean
+
+#]]
+
+# This function generates Makefile and builds modules,
+# kernel c-module will be available in CMAKE_BINARY_DIR/modules
+# with its headers in CMAKE_BINARY_DIR/modules/include/MODULE_NAME
 function(add_c_kernel_module MODULE_NAME MODULE_SRC_DIR)
     set(MODULE_SRC ${ARGN})
 
@@ -49,6 +73,11 @@ function(add_c_kernel_module MODULE_NAME MODULE_SRC_DIR)
             "\t\$(MAKE) -C \$(KDIR) M=\$(PWD) clean\n\n"
     )
 
+    include_directories(${MODULE_SRC_DIR}/include/)
+
+    # include kernel headers dir to syntax highlighting
+    include_directories(${KERNEL_HEADERS_DIRECTORY}/include)
+
     add_custom_target(module-${MODULE_NAME}-build
             COMMAND ${CMAKE_COMMAND} -E make_directory ${MODULE_BUILD_DIR}
             COMMAND ${CMAKE_COMMAND} -E copy_if_different ${MODULE_SRC} ${MODULE_BUILD_DIR}/
@@ -78,36 +107,3 @@ function(add_c_kernel_module MODULE_NAME MODULE_SRC_DIR)
             DEPENDS module-${MODULE_NAME}-install
     )
 endfunction()
-
-#[[
-
-obj-m += hello-1.o
-
-ccflags-y += -DDEBUG
-
-PWD := $(CURDIR)
-
-USERSPACEC = clang
-USERSPACECFLAGS = -Wall -Wextra -g
-
-all: kernel userspace
-
-kernel:
-	$(MAKE) -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
-
-userspace: userspace_ioctl
-
-userspace_ioctl: userspace_ioctl.o
-	$(USERSPACEC) $(USERSPACECFLAGS) userspace_ioctl.o -o userspace_ioctl
-
-userspace_ioctl.o: userspace_ioctl.c
-	$(USERSPACEC) $(USERSPACECFLAGS) -c userspace_ioctl.c
-
-clean:
-	$(MAKE) -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
-	rm -f userspace_ioctl userspace_ioctl.o
-
-indent:
-	clang-format -i *.[ch]
-
-#]]
