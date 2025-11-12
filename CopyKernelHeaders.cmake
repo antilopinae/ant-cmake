@@ -55,18 +55,15 @@ else ()
     )
 endif ()
 
-if (USE_LOCAL_KERNEL_BUILD_DIR)
-    if (NOT EXISTS "${KERNEL_BUILD_DIRECTORY}/Makefile")
-        message(FATAL_ERROR "Kernel build dir ${KERNEL_BUILD_DIRECTORY} has no Makefile. Install linux-headers for your kernel.")
-    endif ()
-
-    set(KERNEL_HEADERS_DIRECTORY "${CMAKE_SOURCE_DIR}/kernel-headers" CACHE INTERNAL "Path to kernel headers")
-
-    add_custom_target(kernel-headers ALL
-            COMMAND ${CMAKE_COMMAND} -E copy_directory ${KERNEL_BUILD_DIRECTORY}/include ${KERNEL_HEADERS_DIRECTORY}/include
-            COMMAND ${CMAKE_COMMAND} -E copy_directory ${KERNEL_BUILD_DIRECTORY}/arch/${PROCESSOR_ARCHITECTURE}/include ${KERNEL_HEADERS_DIRECTORY}/arch/${PROCESSOR_ARCHITECTURE}/include
-            COMMENT "Copying kernel headers in ${KERNEL_HEADERS_DIRECTORY}"
-    )
-
-    add_dependencies(kernel-headers get-headers)
+if (NOT EXISTS "${KERNEL_BUILD_DIRECTORY}/Makefile")
+    message(FATAL_ERROR "Kernel build dir ${KERNEL_BUILD_DIRECTORY} has no Makefile. Install linux-headers for your kernel.")
 endif ()
+
+set(KERNEL_HEADERS_DIRECTORY "${CMAKE_BINARY_DIR}/kernel-headers" CACHE INTERNAL "Path to kernel headers")
+
+add_custom_target(kernel-headers ALL
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${KERNEL_BUILD_DIRECTORY} ${KERNEL_HEADERS_DIRECTORY}
+        COMMENT "Copying kernel headers in ${KERNEL_HEADERS_DIRECTORY}"
+)
+
+add_dependencies(kernel-headers get-headers)
