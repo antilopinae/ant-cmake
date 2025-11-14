@@ -31,5 +31,5 @@ macro(AddTests target)
 endmacro()
 
 # CUnit
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/ant-cmake/modules")
 find_package(CUnit REQUIRED)
