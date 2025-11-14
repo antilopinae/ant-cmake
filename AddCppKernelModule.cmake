@@ -65,8 +65,22 @@ make -C $(KERNEL) M=$(KMOD_DIR) clean
 # This function generates Makefile and builds modules,
 # kernel cpp-module will be available in CMAKE_BINARY_DIR/modules
 # with its headers in CMAKE_BINARY_DIR/modules/include/MODULE_NAME
-function(add_cpp_kernel_module MODULE_NAME MODULE_SRC_DIR)
-    set(MODULE_SRC ${ARGN})
+function(add_cpp_kernel_module)
+    set(options "")
+    set(oneValueArgs MODULE_NAME MODULE_SRC_DIR)
+    set(multiValueArgs MODULE_SRC MODULE_INCLUDE_DIRS)
+
+    cmake_parse_arguments(PARAM
+            "${options}"
+            "${oneValueArgs}"
+            "${multiValueArgs}"
+            ${ARGN}
+    )
+
+    set(MODULE_NAME ${PARAM_MODULE_NAME})
+    set(MODULE_SRC ${PARAM_MODULE_SRC})
+    set(MODULE_SRC_DIR ${PARAM_MODULE_SRC_DIR})
+    set(MODULE_INCLUDE_DIRS ${PARAM_MODULE_INCLUDE_DIRS})
 
     set(MODULE_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/${MODULE_NAME}")
     set(MODULE_OUT "${MODULE_BUILD_DIR}/${MODULE_NAME}.ko")
@@ -81,7 +95,7 @@ function(add_cpp_kernel_module MODULE_NAME MODULE_SRC_DIR)
         get_filename_component(BASE_NAME ${SRC_FILE} NAME_WE)
         if ("${FILE_EXT}" STREQUAL ".cpp")
             list(APPEND MODULE_OBJ_FILES "${BASE_NAME}.cpp.o")
-        else ()
+        elseif ("${FILE_EXT}" STREQUAL ".c")
             list(APPEND MODULE_OBJ_FILES "${BASE_NAME}.o")
         endif ()
     endforeach ()
@@ -92,7 +106,22 @@ function(add_cpp_kernel_module MODULE_NAME MODULE_SRC_DIR)
             "MOD_NAME := ${MODULE_NAME}\n"
             "KERNEL := ${KERNEL_HEADERS_DIRECTORY}\n"
             "FLAGS := -Wall\n"
-            "EXTRA_CFLAGS += -I${MODULE_BUILD_DIR}/include\n"
+    )
+
+    foreach (DIR ${MODULE_INCLUDE_DIRS})
+        list(APPEND COMMANDS_COPY_INCLUDE_DIRECTORIES
+                COMMAND ${CMAKE_COMMAND} -E make_directory ${MODULE_BUILD_DIR}/${DIR}
+                COMMAND ${CMAKE_COMMAND} -E copy_directory ${MODULE_SRC_DIR}/${DIR} ${MODULE_BUILD_DIR}/${DIR}
+        )
+
+        # Include directories
+        file(APPEND "${MODULE_BUILD_DIR}/Makefile"
+                "FLAGS += -I${MODULE_BUILD_DIR}/${DIR}\n"
+                #                "EXTRA_CXXFLAGS += -I${MODULE_BUILD_DIR}/${DIR}\n\n"
+        )
+    endforeach ()
+
+    file(APPEND "${MODULE_BUILD_DIR}/Makefile"
             "KMOD_DIR := ${MODULE_BUILD_DIR}\n\n"
             "OBJECTS := ${MODULE_OBJ_FILES_STR}\n\n"
             "ccflags-y += $(FLAGS)\n\n"
@@ -132,8 +161,7 @@ function(add_cpp_kernel_module MODULE_NAME MODULE_SRC_DIR)
     add_custom_target(module-${MODULE_NAME}-build
             COMMAND ${CMAKE_COMMAND} -E make_directory ${MODULE_BUILD_DIR}
             COMMAND ${CMAKE_COMMAND} -E copy_if_different ${MODULE_SRC} ${MODULE_BUILD_DIR}/
-            COMMAND ${CMAKE_COMMAND} -E make_directory ${MODULE_BUILD_DIR}/include/
-            COMMAND ${CMAKE_COMMAND} -E copy_directory ${MODULE_SRC_DIR}/include/ ${MODULE_BUILD_DIR}/include/
+            ${COMMANDS_COPY_INCLUDE_DIRECTORIES}
             COMMAND ${CMAKE_COMMAND} -E chdir ${MODULE_BUILD_DIR} make -f Makefile
             WORKING_DIRECTORY ${MODULE_SRC_DIR}
             BYPRODUCTS ${MODULE_OUT}
