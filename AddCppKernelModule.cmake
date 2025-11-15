@@ -122,6 +122,7 @@ function(add_cpp_kernel_module)
     endforeach ()
 
     file(APPEND "${MODULE_BUILD_DIR}/Makefile"
+            "FLAGS += -D__KERNEL_MODULE__\n"
             "KMOD_DIR := ${MODULE_BUILD_DIR}\n\n"
             "OBJECTS := ${MODULE_OBJ_FILES_STR}\n\n"
             "ccflags-y += $(FLAGS)\n\n"
@@ -135,7 +136,7 @@ function(add_cpp_kernel_module)
             "\t| sed s/-Werror=incompatible-pointer-types//g \\\n"
             "\t| sed s/-Werror=designated-init//g \\\n"
             "\t| sed s/-std=gnu90//g )\n\n"
-            "cxxflags = $(FLAGS) $(cxx-selected-flags) -fno-builtin -nostdlib -fno-rtti -fno-exceptions -std=c++0x\n\n"
+            "cxxflags = $(FLAGS) $(cxx-selected-flags) -fno-builtin -nostdlib -fno-rtti -fno-exceptions -std=c++20\n\n"
             "obj-m += $(MOD_NAME).o\n\n"
             "$(MOD_NAME)-y := $(OBJECTS)\n\n"
             ".PHONY: $(MOD_NAME).ko\n"
