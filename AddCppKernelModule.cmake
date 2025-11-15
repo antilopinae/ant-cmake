@@ -163,6 +163,7 @@ function(add_cpp_kernel_module)
             COMMAND ${CMAKE_COMMAND} -E make_directory ${MODULE_BUILD_DIR}
             COMMAND ${CMAKE_COMMAND} -E copy_if_different ${MODULE_SRC} ${MODULE_BUILD_DIR}/
             ${COMMANDS_COPY_INCLUDE_DIRECTORIES}
+            COMMAND ${CMAKE_COMMAND} -E chdir ${MODULE_BUILD_DIR} make -f Makefile clean
             COMMAND ${CMAKE_COMMAND} -E chdir ${MODULE_BUILD_DIR} make -f Makefile
             WORKING_DIRECTORY ${MODULE_SRC_DIR}
             BYPRODUCTS ${MODULE_OUT}
